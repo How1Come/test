@@ -1,0 +1,406 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Communication Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 明亮配色方案 */
+            --primary-color: #4A90E2;  /* 更新主色为亮蓝色 */
+            --secondary-color: #FF6B6B; /* 辅助色为珊瑚红 */
+            --bg-color: #F8F9FA;      /* 背景改为浅灰色 */
+            --card-bg: #FFFFFF;       /* 卡片背景保持纯白 */
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--bg-color);
+            min-height: 100vh;
+    background: linear-gradient(135deg, var(--bg-color) 0%, #188bff 100%);
+            
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 25px;
+        }
+
+        /* 聊天框样式 */
+        .chat-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .chat-header h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .chat-box {
+            background-color: grey;
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        .message {
+            margin: 12px 0;
+            display: flex;
+                gap: 12px;
+            }
+
+        .user-message {
+            flex-direction: row-reverse;
+            justify-content: right; /* 新增：强制右对齐 */
+        }
+
+        .ai-message {
+            justify-content: flex-start; /* 明确左对齐 */
+        }
+
+        .message-bubble {
+            max-width: 100%; /* 略微增加最大宽度 */
+            word-break: break-word; /* 长文本自动换行 */;
+        }
+        .user-message .message-bubble {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 20px 4px 20px 20px;
+        }
+
+        .ai-message .message-bubble {
+            background: var(--card-bg);
+            border: 1px solid #eee;
+            border-radius: 4px 20px 20px 20px;
+            color: white
+        }
+
+        /* 输入区域 */
+        .input-group {
+            display: flex;
+            gap: 12px;
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        #userInput:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(95,122,255,0.1);
+        }
+
+        button {
+            padding: 14px 24px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* 数据分析面板 */
+        .analytics-panel {
+            background: rgba(255,255,255);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .time-marker {
+            color: #666;
+            font-size: 0.9em;
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .time-marker::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            border-top: 1px dashed #eee;
+            z-index: 0;
+        }
+
+        .time-marker span {
+            background: var(--card-bg);
+            padding: 0 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .chat-box {
+                max-height: 50vh;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 添加在style区块底部 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1A1A1A;
+                --card-bg: #2D2D2D;
+                }
+    
+            /* AI消息样式 */
+            .ai-message {
+                justify-content: flex-start; /* 左对齐 */
+            }
+
+        }
+
+        .loading-dots {
+            font-size: xx-large;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>Chatbot 💬</h1>
+                <p>Your personal Chat Assistant</p>
+            </div>
+            
+            <div class="chat-box" id="chatBox"></div>
+            
+            <div class="input-group">
+                <input type="text" id="userInput" placeholder="input text...">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        
+        <!-- 数据分析仪表盘 -->
+        <div class="analytics-panel">
+            <h2>Communication data 📊</h2>
+            <div id="chart-container">
+                <canvas id="analyticsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // 在脚本开头添加
+        let chart = null; // 全局图表实例引用
+        // 生成唯一的会话 ID (添加在 script 标签开头)
+        let sessionId = Date.now().toString(); 
+
+        // 如果需要更复杂的 ID 生成方式，可以使用：
+        // sessionId = crypto.randomUUID() // 需要 HTTPS 环境
+
+        // 保持原有JavaScript功能...
+        // 添加消息时使用新样式：
+        function appendMessage(role, content) {
+        const box = document.getElementById('chatBox');
+    
+        // 创建消息容器
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${role}-message`; // 确保类名格式正确
+    
+        // 创建消息气泡
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.textContent = content;
+    
+        messageDiv.appendChild(bubble);
+        box.appendChild(messageDiv);
+    
+        // 自动滚动到底部
+        box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // 确保 sessionId 存在
+            if (!sessionId) {
+                sessionId = Date.now().toString();
+                console.log('New session started:', sessionId);
+            }
+
+            // 显示用户消息
+            appendMessage('user', message);
+    
+            // 显示加载状态
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message ai-message loading';
+            loadingDiv.innerHTML = `
+                <div class="message-bubble">
+                    <div class="loading-dots">
+                     <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('chatBox').appendChild(loadingDiv);
+    
+            input.value = '';
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                    session_id: sessionId, // 使用定义好的变量
+                    message: message
+                    })
+            });
+                
+                const data = await response.json();
+                loadingDiv.remove();
+                appendMessage('ai', data.response);
+                updateAnalytics();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function updateAnalytics() {
+            try {
+                const response = await fetch(`/analytics?session_id=${sessionId}`);
+                const data = await response.json();
+        
+                // 销毁旧图表
+                if (chart !== null) {
+                    chart.destroy();
+                    chart = null;
+                }
+        
+                // 转换时间戳格式
+                const timestamps = data.timestamps.map(ts => 
+                    new Date(ts).toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit'
+                    })
+                );
+        
+                // 获取画布上下文
+                const ctx = document.getElementById('analyticsChart').getContext('2d');
+        
+                // 创建新图表
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: timestamps,
+                        datasets: [{
+                            label: 'Response Time (s)',
+                            data: data.response_times,
+                            borderColor: '#2196F3',
+                            tension: 0.4,
+                            borderWidth: 2
+                        }, {
+                            label: 'Clarity Score',
+                            data: data.clarity_scores,
+                            borderColor: '#4CAF50',
+                            tension: 0.4,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                            position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: 'Communication Data Trend Analytic'
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: 'time'
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                max: Math.max(...data.response_times, ...data.clarity_scores) + 0.5,
+                                title: {
+                                    display: true,
+                                    text: 'data'
+                                },
+                                ticks: {
+                                    stepSize: 0.5
+                                }
+                            }
+                        }
+                    }
+                });
+        
+            } catch (error) {
+                console.error('Analytic error:', error);
+                if (chart) {
+                    chart.destroy();
+                    chart = null;
+                }
+            }
+        }
+
+        // 初始化
+        document.getElementById('userInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
